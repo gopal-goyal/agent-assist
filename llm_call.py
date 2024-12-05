@@ -24,28 +24,38 @@ def llm_call(prompt):
     current_date, one_year_ago = get_default_dates()
 
     system_prompt = f"""
-    You are tasked with extracting the following details from the query:
+    You are tasked with extracting specific details from the query, accounting for variations in user input and maintaining accuracy.
+    Utilize semantic understanding to identify and normalize the following details accurately:
 
     {prompt}
 
     Your task is to extract the following information:
-    1. Entity: The company name mentioned in the query (e.g., Flipkart, Amazon).
-    2. Parameter: The performance metric mentioned (e.g., GMV, revenue, profit).
-    3. Start Date: The start date for the time period in the query (in ISO 8601 format). If no date is specified, use the default: {one_year_ago}.
+    1. Entity: The company name mentioned in the query (e.g., Flipkart, Amazon). Consider variations, abbreviations, or alternative spellings (e.g., "Flip Kart" or "AMZN" for Flipkart and Amazon, respectively).
+    2. Parameter: The performance metric mentioned (e.g., GMV, revenue, profit). Account for synonyms, acronyms, or alternative terms (e.g., "Gross Merchandise Value" for GMV).
+    3. Start Date: The start date for the time period in the query (in ISO 8601 format). If relative date ranges are provided (e.g., "last quarter", "previous month"), calculate the appropriate ISO 8601 date. If no date is specified, use the default: {one_year_ago}.
     4. End Date: The end date for the time period in the query (in ISO 8601 format). If no date is specified, use the default: {current_date}.
-    
-    Please return the extracted information strictly in the following JSON format without any additional text or explanations:
+
+    If the query asks for comparisons across multiple companies (for example, comparing Amazon and Flipkart), you must provide the extracted details for each company separately as distinct objects in the same JSON response. 
+    Each object should represent one company and its corresponding performance metrics, with "entity" representing the company, "parameter" the performance metric, and the relevant dates for that company.
+
+    For example, if a query asks for data for Amazon and Flipkart, you should return a JSON like this:
 
     ```json
     [
         {{
-            "entity": "<company_name>",
-            "parameter": "<metric_name>",
-            "startDate": "<start_date_iso>",
-            "endDate": "<end_date_iso>"
+            "entity": "Amazon",
+            "parameter": "revenue",
+            "startDate": "2023-01-01",
+            "endDate": "2023-12-31"
+        }},
+        {{
+            "entity": "Flipkart",
+            "parameter": "GMV",
+            "startDate": "2023-01-01",
+            "endDate": "2023-12-31"
         }}
     ]
-    """
+"""
     
     chat_completion = client.chat.completions.create(
         messages=[
